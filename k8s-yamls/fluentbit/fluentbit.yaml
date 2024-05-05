@@ -1,0 +1,37 @@
+config:
+  ## https://docs.fluentbit.io/manual/pipeline/outputs
+
+
+  outputs: |
+    [OUTPUT]
+        Name es
+        Match kube.*
+        Host elasticsearch-svc
+        Logstash_Format On
+        Retry_Limit 3
+        Suppress_Type_Name On
+        #Write_Operation upsert
+        #Generate_ID On
+        #Replace_Dots On
+
+    [OUTPUT]
+        Name es
+        Match host.*
+        Host elasticsearch-svc
+        Logstash_Format On
+        Logstash_Prefix node
+        Retry_Limit 3
+        Suppress_Type_Name On
+        #Write_Operation upsert
+        #Generate_ID On
+        #Replace_Dots On
+
+  customParsers: |
+    [PARSER]
+        # http://rubular.com/r/tjUt3Awgg4
+        Name cri
+        Format regex
+        Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+        Time_Keep   On

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+ name: elasticsearch
+spec:
+ serviceName: elasticsearch-svc
+ replicas: 1
+ selector:
+   matchLabels:
+     app: elasticsearch
+ template:
+   metadata:
+     labels:
+       app: elasticsearch
+   spec:
+     initContainers:
+       - name: permissions-fix
+         image: busybox
+         volumeMounts:
+           - name: elasticsearch-storage
+             mountPath: /usr/share/elasticsearch/data
+         command: [ 'chown' ]
+         args: [ '1000:1000', '/usr/share/elasticsearch/data' ]
+     containers:
+     - name: elasticsearch
+       image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+       env:
+       - name: "discovery.type"
+         value: "single-node"
+       - name: "ES_JAVA_OPTS"
+         value: "-Xms256m -Xmx256m"
+       - name: "xpack.security.enabled"
+         value: "false"
+       - name: "xpack.security.enrollment.enabled"
+         value: "false"
+       volumeMounts:
+         - name: elasticsearch-storage
+           mountPath: /usr/share/elasticsearch/data
+ volumeClaimTemplates:
+ - metadata:
+     name: elasticsearch-storage
+   spec:
+     accessModes: [ "ReadWriteOnce" ]
+     storageClassName: ebs-sc
+     resources:
+       requests:
+         storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-svc
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
